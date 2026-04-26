@@ -1,0 +1,92 @@
+﻿@page "/motorists/delete/{Id:int}"
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Delete Motorist</PageTitle>
+
+<h3>Delete Motorist</h3>
+
+@if (motorist == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="alert alert-warning">
+        Are you sure you want to delete the motorist?
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            @errorMessage
+        </div>
+    }
+
+    <dl class="row">
+        <dt class="col-sm-3">Name</dt>
+        <dd class="col-sm-9">@motorist.FullName</dd>  
+
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">@motorist.Email</dd>  
+
+        <dt class="col-sm-3">Phone Number</dt>
+        <dd class="col-sm-9">@motorist.PhoneNumber</dd> 
+
+        <dt class="col-sm-3">City</dt>
+        <dd class="col-sm-9">@motorist.City</dd> 
+    </dl>
+
+    <EditForm Model="motorist" OnValidSubmit="HandleDelete" FormName="motoristDeleteForm">
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a class="btn btn-secondary ms-2" href="/motorists">Cancel</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Motorist? motorist;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        motorist = await context.Motorists
+            .Include(m => m.Vehicles)
+            .FirstOrDefaultAsync(m => m.Id == Id);
+    }
+
+    private async Task HandleDelete()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        var existingMotorist = await context.Motorists
+            .Include(m => m.Vehicles)
+            .FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (existingMotorist == null)
+        {
+            NavigationManager.NavigateTo("/motorists");
+            return;
+        }
+
+        if (existingMotorist.Vehicles != null && existingMotorist.Vehicles.Any())
+        {
+            errorMessage = "This Motorist cannot be deleted because they still have vehicle records linked to them.";
+            return;
+        }
+
+        context.Motorists.Remove(existingMotorist);
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/motorists?deleted=true");
+        
+    }
+}

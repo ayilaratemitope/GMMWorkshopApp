@@ -1,0 +1,76 @@
+﻿@page "/motorists/create"
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Register Motorist</PageTitle>
+
+<h3>Register Motorist</h3>
+
+<EditForm Model="Motorist" OnValidSubmit="HandleValidSubmit" FormName="motoristCreate" method="post">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">First Name</label>
+        <InputText class="form-control" @bind-Value="Motorist.FirstName" />
+        <ValidationMessage For="() => Motorist.FirstName" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Last Name</label>
+        <InputText class="form-control" @bind-Value="Motorist.LastName" />
+        <ValidationMessage For="() => Motorist.LastName" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <InputText class="form-control" @bind-Value="Motorist.Email" />
+        <ValidationMessage For="() => Motorist.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Phone Number</label>
+        <InputText class="form-control" @bind-Value="Motorist.PhoneNumber" />
+        <ValidationMessage For="() => Motorist.PhoneNumber" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Address Line 1</label>
+        <InputText class="form-control" @bind-Value="Motorist.AddressLine1" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Address Line 2</label>
+        <InputText class="form-control" @bind-Value="Motorist.AddressLine2" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">City</label>
+        <InputText class="form-control" @bind-Value="Motorist.City" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Postcode</label>
+        <InputText class="form-control" @bind-Value="Motorist.Postcode" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a class="btn btn-secondary ms-2" href="/motorists">Cancel</a>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm]
+    private Motorist Motorist { get; set; } = new();
+
+    private async Task HandleValidSubmit()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        context.Motorists.Add(Motorist);
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/motorists");
+    }
+}

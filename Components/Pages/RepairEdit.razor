@@ -1,0 +1,98 @@
+﻿@page "/repairs/edit/{Id:int}"
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+
+<h3>Edit Repair</h3>
+
+@if (editModel == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm Model="@editModel" OnValidSubmit="HandleValidSubmit" FormName="RepairEditForm">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Repair Description</label>
+            <InputTextArea class="form-control" @bind-Value="editModel.RepairDescription" />
+            <ValidationMessage For="() => editModel.RepairDescription" />
+        </div>
+
+        <div class="mb-3">
+            <label>Labour Hours</label>
+            <InputNumber class="form-control" @bind-Value="editModel.LabourHours" />
+            <ValidationMessage For="() => editModel.LabourHours" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn btn-secondary ms-2" href="/repairs">Cancel</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private RepairEditModel? editModel { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (editModel is null)
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+
+            var repair = await context.Repairs
+               .AsNoTracking()
+               .FirstOrDefaultAsync(r => r.Id == Id);
+
+            if (repair != null)
+            {
+                editModel = new RepairEditModel
+                {
+                     RepairDescription = repair.RepairDescription,
+                     LabourHours = repair.LabourHours
+                };
+            }
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (editModel is null)
+            return;
+
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        var existingRepair = await context.Repairs
+            .SingleOrDefaultAsync(r => r.Id == Id);
+            
+        if (existingRepair is null)
+            return;
+        
+        existingRepair.RepairDescription = editModel.RepairDescription;
+        existingRepair.LabourHours = editModel.LabourHours;
+        
+        await context.SaveChangesAsync();
+        
+        NavigationManager.NavigateTo("/repairs", true);
+    }
+
+    public class RepairEditModel
+    {
+        [Required]
+        [StringLength(500)]
+        public string RepairDescription { get; set; } = string.Empty;
+       
+        [Range(0, 1000)]
+        public decimal LabourHours { get; set; }
+    }
+}

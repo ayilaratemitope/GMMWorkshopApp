@@ -1,0 +1,98 @@
+﻿@page "/vehicles/create"
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Register Vehicle</PageTitle>
+
+<h3>Register Vehicle</h3>
+
+@if (motorists == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm Model="Vehicle" OnValidSubmit="HandleValidSubmit" FormName="vehicleCreate" method="post">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Registration Number</label>
+            <InputText class="form-control" @bind-Value="Vehicle.RegistrationNumber" />
+            <ValidationMessage For="() => Vehicle.RegistrationNumber" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Make</label>
+            <InputText class="form-control" @bind-Value="Vehicle.Make" />
+            <ValidationMessage For="() => Vehicle.Make" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Model</label>
+            <InputText class="form-control" @bind-Value="Vehicle.Model" />
+            <ValidationMessage For="() => Vehicle.Model" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Vehicle Type</label>
+            <InputText class="form-control" @bind-Value="Vehicle.VehicleType" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Year Of Manufacture</label>
+            <InputNumber class="form-control" @bind-Value="Vehicle.YearOfManufacture" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Fault Description</label>
+            <InputText class="form-control" @bind-Value="Vehicle.FaultDescription" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Motorist</label>
+            <InputSelect class="form-select" @bind-Value="Vehicle.MotoristId">
+                <option value="0">-- Select Motorist --</option>
+                @foreach (var motorist in motorists)
+                {
+                    <option value="@motorist.Id">@motorist.FullName (@motorist.Email)</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => Vehicle.MotoristId" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn btn-secondary ms-2" href="/vehicles">Cancel</a>
+    </EditForm>
+}
+
+@code {
+    [SupplyParameterFromForm]
+    private Vehicle Vehicle { get; set; } = new();
+
+    private List<Motorist>? motorists;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        motorists = await context.Motorists
+            .OrderBy(m => m.LastName)
+            .ThenBy(m => m.FirstName)
+            .ToListAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        context.Vehicles.Add(Vehicle);
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/vehicles");
+    }
+}

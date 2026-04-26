@@ -1,0 +1,132 @@
+﻿@page "/motorists/edit/{Id:int}"
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations    
+
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager 
+
+<PageTitle>Edit Motorist</PageTitle>
+
+<h3>Edit Motorist</h3>
+
+@if (editModel is null)
+{
+    <p><em>Loading...</em></p>  
+}
+else
+{
+        <EditForm Model="@editModel" OnValidSubmit="HandleValidSubmit"  FormName="MotoristEditForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">First Name</label>
+                <InputText class="form-control" @bind-Value="editModel.FirstName" />
+                <ValidationMessage For="@(() => editModel.FirstName)" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Last Name</label>
+                <InputText class="form-control" @bind-Value="editModel.LastName" />
+                <ValidationMessage For="@(() => editModel.LastName)" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <InputText class="form-control" @bind-Value="editModel.Email" />
+                <ValidationMessage For="@(() => editModel.Email)" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">PhoneNumber</label>
+                <InputText class="form-control" @bind-Value="editModel.PhoneNumber" />
+                <ValidationMessage For="@(() => editModel.PhoneNumber)" />
+             </div>
+
+             <div class="mb-3"> 
+                 <label class="form-label">City</label>
+                 <InputText class="form-control" @bind-Value="editModel.City" />
+                 <ValidationMessage For="@(() => editModel.City)" />            
+             </div>
+
+             <button class="btn btn-primary" type="submit">Save</button>
+             <a class="btn btn-secondary ms-2" href="/motorists">Cancel</a>
+        </EditForm>
+    }
+
+    @code {
+        [Parameter]
+        public int Id { get; set; }
+
+        [SupplyParameterFromForm]
+        private MotoristEditModel? editModel { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (editModel is null)
+        {
+            using var context = await DbFactory.CreateDbContextAsync();
+
+            var motorist = await context.Motorists
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == Id);
+
+            if (motorist is not null)
+            {
+                editModel = new MotoristEditModel
+                {
+                    FirstName = motorist.FirstName,
+                    LastName = motorist.LastName,
+                    Email = motorist.Email,
+                    PhoneNumber = motorist.PhoneNumber,
+                    City = motorist.City
+                };
+            }
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    { 
+        if (editModel is null)
+            return;
+
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        var existing = await context.Motorists.FindAsync(Id);
+
+        if (existing is null)
+            return;
+
+        existing.FirstName = editModel!.FirstName;
+        existing.LastName = editModel.LastName;
+        existing.Email = editModel.Email;
+        existing.PhoneNumber = editModel.PhoneNumber;
+        existing.City = editModel.City;
+           
+        await context.SaveChangesAsync();
+           
+        NavigationManager.NavigateTo("/motorists?updated=true");
+    }
+
+    public class MotoristEditModel
+    {
+        [Required]
+        public string FirstName { get; set; } = "";
+
+        [Required]
+        public string LastName { get; set; } = "";
+
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [Phone]
+        public string? PhoneNumber { get; set; }
+        
+        public string? City { get; set; }
+   }
+}

@@ -1,0 +1,91 @@
+﻿@page "/repairs/create"
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Log New Repair</PageTitle>
+
+<h3>Log New Repair</h3>
+<p>Record a repair against a vehicle and store the cost of the parts used for repair to the motorist.</p>
+
+@if (vehicles == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm Model="Repair" OnValidSubmit="HandleValidSubmit" FormName="repairCreate" method="post">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Repair Date</label>
+            <InputDate class="form-control" @bind-Value="Repair.RepairDate" />
+            <ValidationMessage For="() => Repair.RepairDate" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Vehicle</label>
+            <InputSelect class="form-select" @bind-Value="Repair.VehicleId">
+                <option value="0">-- Select Vehicle --</option>
+                @foreach (var vehicle in vehicles)
+                {
+                    <option value="@vehicle.Id">
+                        @vehicle.RegistrationNumber - @vehicle.Make @vehicle.Model (@vehicle.Motorist?.FullName)
+                    </option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => Repair.VehicleId" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Repair Description</label>
+            <InputTextArea class="form-control" @bind-Value="Repair.RepairDescription" />
+            <ValidationMessage For="() => Repair.RepairDescription" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Labour Hours</label>
+            <InputNumber class="form-control" @bind-Value="Repair.LabourHours" />
+            <ValidationMessage For="() => Repair.LabourHours" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Total Parts Cost (Labour not charged</label>
+            <input class="form-control" value="@Repair.TotalRepairCost.ToString("C")" readonly />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn btn-secondary ms-2" href="/repairs">Cancel</a>
+    </EditForm>
+}
+
+@code {
+    [SupplyParameterFromForm]
+    private Repair Repair { get; set; } = new();
+
+    private List<Vehicle>? vehicles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        vehicles = await context.Vehicles
+            .Include(v => v.Motorist)
+            .OrderBy(v => v.RegistrationNumber)
+            .ToListAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        context.Repairs.Add(Repair);
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/repairs");
+    }
+}

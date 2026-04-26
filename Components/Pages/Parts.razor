@@ -1,0 +1,72 @@
+﻿@page "/parts"
+@using GMMWorkshopApp.Components.Account.Pages
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+
+<PageTitle>Parts</PageTitle>
+
+<h3>Parts</h3>
+
+<p>
+    <a class="btn btn-primary" href="/parts/create">Add New Part</a>
+</p>
+
+@if (parts == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!parts.Any())
+{
+    <p>No parts found.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Part Name</th>
+                <th>Part Category</th>
+                <th>Quantity</th>
+                <th>Unit Cost</th>
+                <th>Total Cost</th>
+                <th>Repair</th>
+                <th>Vehicle</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var part in parts)
+            {
+                <tr>
+                    <td>@part.PartName</td>
+                    <td>@part.PartCategory</td>
+                    <td>@part.QuantityUsed</td>
+                    <td>@part.UnitCost.ToString("C")</td>
+                    <td>@part.TotalCost.ToString("C")</td>
+                    <td>@part.Repair?.RepairDescription</td>
+                    <td>@part.Repair?.Vehicle?.RegistrationNumber</td>
+                    <td>
+                       <a class= "btn btn-sm btn-outline-primary me-1" href="/parts/edit/@part.Id">Edit</a> 
+                       <a class= "btn btn-sm btn-outline-danger" href="/parts/delete/@part.Id">Delete</a>
+                    </td>    
+               </tr>   
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Part>? parts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        parts = await context.Parts
+            .Include(p => p.Repair)
+            .ThenInclude(r => r.Vehicle)
+            .OrderBy(p => p.PartName)
+            .ToListAsync();
+    }
+}

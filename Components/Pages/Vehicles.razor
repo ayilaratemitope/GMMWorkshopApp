@@ -1,0 +1,63 @@
+﻿@page "/vehicles"
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+
+<PageTitle>Vehicles</PageTitle>
+
+<h3>Vehicles</h3>
+
+<p>
+    <a class="btn btn-primary" href="/vehicles/create">Register New Vehicle</a>
+</p>
+
+@if (vehicles == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!vehicles.Any())
+{
+    <p>No vehicles found.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Registration</th>
+                <th>Make</th>
+                <th>Model</th>
+                <th>Type</th>
+                <th>Owner</th>
+                <th>Fault</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var vehicle in vehicles)
+            {
+                <tr>
+                    <td>@vehicle.RegistrationNumber</td>
+                    <td>@vehicle.Make</td>
+                    <td>@vehicle.Model</td>
+                    <td>@vehicle.VehicleType</td>
+                    <td>@vehicle.Motorist?.FullName</td>
+                    <td>@vehicle.FaultDescription</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Vehicle>? vehicles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        vehicles = await context.Vehicles
+            .Include(v => v.Motorist)
+            .OrderBy(v => v.RegistrationNumber)
+            .ToListAsync();
+    }
+}

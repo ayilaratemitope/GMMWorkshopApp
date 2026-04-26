@@ -1,0 +1,71 @@
+﻿@page "/parts/delete/{Id:int}"
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Delete Part</PageTitle>
+
+<h3>Delete Part</h3>
+
+@if (Part == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="alert alert-warning">
+        Are you sure you want to delete this part?
+    </div>
+
+    <dl class="row">
+        <dt class="col-sm-3">Part Name</dt>
+        <dd class="col-sm-9">@Part.PartName</dd>
+
+        <dt class="col-sm-3">Part Category</dt>
+        <dd class="col-sm-9">@Part.PartCategory</dd>
+
+        <dt class="col-sm-3">Quantity</dt>
+        <dd class="col-sm-9">@Part.QuantityUsed</dd>
+
+        <dt class="col-sm-3">Unit Cost</dt>
+        <dd class="col-sm-9">@Part.UnitCost.ToString("C")</dd>
+
+        <dt class="col-sm-3">Total Cost</dt>
+        <dd class="col-sm-9">@Part.TotalCost.ToString("C")</dd>
+    </dl>
+
+    <EditForm Model="Part" OnValidSubmit="HandleDelete" FormName="partDelete" method="post">
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a class="btn btn-secondary ms-2" href="/parts">Cancel</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Part? Part { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        Part = await context.Parts
+            .Include(p => p.Repair)
+            .FirstOrDefaultAsync(p => p.Id == Id);
+    }
+
+    private async Task HandleDelete()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        var rowsAffected = await context.Parts
+            .Where(p => p.Id == Id)
+            .ExecuteDeleteAsync();
+
+        NavigationManager.NavigateTo("/parts");
+    }
+}

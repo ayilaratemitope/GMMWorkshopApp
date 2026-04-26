@@ -1,0 +1,122 @@
+﻿@page "/parts/edit/{Id:int}"
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Part</PageTitle>
+
+<h3>Edit Part</h3>
+
+@if (Part == null || repairs == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm Model="@Part" OnValidSubmit="HandleValidSubmit" FormName="partEditForm">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Part Name</label>
+            <InputText class="form-control" @bind-Value="Part.PartName" />
+            <ValidationMessage For="() => Part.PartName" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Part Category</label>
+            <InputSelect class="form-select" @bind-Value="Part.PartCategory" >
+            @foreach (PartCategory category in Enum.GetValues(typeof(PartCategory)))
+            {
+                <option value="@category">@category</option>
+            }
+            </InputSelect>  
+            
+            <ValidationMessage For="() => Part.PartCategory" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Quantity Used</label>
+            <InputNumber class="form-control" @bind-Value="Part.QuantityUsed" />
+            <ValidationMessage For="() => Part.QuantityUsed" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Unit Cost</label>
+            <InputNumber class="form-control" @bind-Value="Part.UnitCost" />
+            <ValidationMessage For="() => Part.UnitCost" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Calculated Total Cost</label>
+            <input class="form-control" value="@Part.TotalCost.ToString("C")" readonly />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Repair</label>
+            <InputSelect class="form-select" @bind-Value="Part.RepairId">
+                <option value="0">-- Select Repair --</option>
+                @foreach (var repair in repairs)
+                {
+                    <option value="@repair.Id">
+                        @repair.RepairDate.ToShortDateString() - @repair.Vehicle?.RegistrationNumber - @repair.RepairDescription
+                    </option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => Part.RepairId" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a class="btn btn-secondary ms-2" href="/parts">Cancel</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Part? Part { get; set; }
+
+    private List<Repair>? repairs;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        repairs = await context.Repairs
+            .Include(r => r.Vehicle)
+            .OrderByDescending(r => r.RepairDate)
+            .ToListAsync();
+
+        if (Part == null)
+        {
+            Part = await context.Parts.FirstOrDefaultAsync(p => p.Id == Id);
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        var existingPart = await context.Parts.FirstOrDefaultAsync(p => p.Id == Id);
+
+        if (existingPart == null || Part == null)
+        {
+            return;
+        }
+
+        existingPart.PartName = Part.PartName;
+        existingPart.PartCategory = Part.PartCategory;
+        existingPart.QuantityUsed = Part.QuantityUsed;
+        existingPart.UnitCost = Part.UnitCost;
+        existingPart.RepairId = Part.RepairId;
+
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/parts");
+    }
+}

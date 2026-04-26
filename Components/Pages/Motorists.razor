@@ -1,0 +1,99 @@
+﻿@page "/motorists"
+@using GMMWorkshopApp.Components.Account.Pages
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Motorists</PageTitle>
+
+<div class="page-container">
+
+    <h3>Motorists</h3>
+
+    <p>
+        <a class="btn btn-primary" href="/motorists/create">Register New Motorist</a>
+    </p>
+
+    @if (NavigationManager.Uri.Contains("created=true"))
+    {
+        <div class="alert alert-success">
+            Motorist created successfully.
+        </div>
+    }
+
+    @if (NavigationManager.Uri.Contains("updated=true"))
+    {
+        <div class="alert alert-success">
+            Motorist updated successfully.      
+        </div>
+    }
+
+    @if (NavigationManager.Uri.Contains("updated=true"))
+    {
+        <div class="alert alert-success">
+            Motorist updated successfully.      
+        </div>
+    }
+
+    @if (motorists == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    
+    else if (!motorists.Any())
+    {
+        <p>No motorists found.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>City</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var motorist in motorists)
+                {
+                    <tr>
+                        <td>@motorist.FullName</td>
+                        <td>@motorist.Email</td>
+                        <td>@motorist.PhoneNumber</td>
+                        <td>@motorist.City</td>
+                        <td class="text-center">
+
+                            <AuthorizeView Roles="Admin">
+                                <a class="btn btn-sm btn-outline-primary me-1" href="/motorists/edit/@motorist.Id">Edit</a>
+                                <a class="btn btn-sm btn-outline-danger" href="/motorists/delete/@motorist.Id">Delete</a>
+                            </AuthorizeView>
+
+                            <AuthorizeView Roles="WorkshopUser">
+                                <span class="text-muted">View Only</span>
+                            </AuthorizeView>
+
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private List<Motorist>? motorists;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        motorists = await context.Motorists
+            .OrderBy(m => m.LastName)
+            .ThenBy(m => m.FirstName)
+            .ToListAsync();
+    }
+}

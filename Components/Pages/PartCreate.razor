@@ -1,0 +1,125 @@
+﻿@page "/parts/create"
+@page "/parts/create/{RepairId:int}"
+@using GMMWorkshopApp.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDbContextFactory<GMMWorkshopApp.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Add New Part</PageTitle>
+
+<div class="page-container">
+    <h3>Add New Part</h3>
+
+    @if (RepairId.HasValue)
+    {
+        <p>Adding part for the selected repair.</p>
+    }
+    else
+    {
+        <p>Select the repair this part belong to.</p>
+    }
+
+    @if (repairs == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <EditForm Model="@Part" OnValidSubmit="HandleValidSubmit" FormName="PartCreateForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Part Name</label>
+                <InputText class="form-control" @bind-Value="Part.PartName" />
+                <ValidationMessage For="() => Part.PartName" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Part Category</label>
+                <InputSelect class="form-select" @bind-Value="Part.PartCategory">
+                    @foreach (PartCategory category in Enum.GetValues<PartCategory>())
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Part.PartCategory" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Quantity Used</label>
+                <InputNumber class="form-control" @bind-Value="Part.QuantityUsed" />
+                <ValidationMessage For="() => Part.QuantityUsed" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Unit Cost</label>
+                <InputNumber class="form-control" @bind-Value="Part.UnitCost" />
+                <ValidationMessage For="() => Part.UnitCost" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Calculated Total Cost</label>
+                <input class="form-control" value="@Part.TotalCost.ToString("0.00")" readonly />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Repair</label>
+                <InputSelect class="form-select" @bind-Value="Part.RepairId" disabled="@RepairId.HasValue">
+                    <option value="0">-- Select Repair --</option>
+                    @foreach (var repair in repairs)
+                    {
+                        <option value="@repair.Id">
+                            @repair.RepairDate.ToShortDateString() - @repair.Vehicle?.RegistrationNumber - @repair.RepairDescription
+                        </option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Part.RepairId" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a class="btn btn-secondary ms-2" href="/parts">Cancel</a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int? RepairId { get; set; }
+
+    [SupplyParameterFromForm]
+    private Part Part { get; set; } = new()
+    {
+        QuantityUsed = 1,
+        UnitCost = 0
+    };
+
+    private List<Repair>? repairs;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        repairs = await context.Repairs
+            .Include(r => r.Vehicle)
+            .OrderByDescending(r => r.RepairDate)
+            .ToListAsync();
+
+        if (RepairId.HasValue && RepairId.Value > 0)
+        {
+            Part.RepairId = RepairId.Value;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+
+        context.Parts.Add(Part);
+        await context.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/parts?created=true", true);
+    }
+}
