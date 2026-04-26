@@ -33,4 +33,15 @@ A full-stack web application developed using **Blazor Server** and **Entity Fram
 1. Clone the repository:
 ```bash
 git clone https://github.com/ayilaratemitope/GMMWorkshopApp.git
+2. Open in Visual Studio
+3. Run the application
 
+## Future Improvement
+- Search & filter functionality
+- Dashboard and reports
+- Online deployment
+- Full role-based access control
+
+## Author
+Temitope Ayilara
+Software Engineering Student (UK)
