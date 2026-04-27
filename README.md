@@ -15,11 +15,11 @@ A full-stack web application developed using **Blazor Server** and **Entity Fram
 - Clean UI with responsive design
 
 # Technologies Used
-- ASP.NET Core Blazor Server
+- C# (.NET / Blazor Server)
 - Entity Framework Core
-- SQLite / SQL Server
-- Bootstrap (UI Styling)
-- C#
+- Razor Pages (UI)
+- HTML/CSS
+
 
 # Login Details (Admin)
 - Username: admin@gmmw.com  
